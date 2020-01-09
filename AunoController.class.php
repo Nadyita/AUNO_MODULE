@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Budabot\User\Modules;
 
+use Budabot\Core\CommandReply;
+use Budabot\Core\DBRow;
 use StdClass;
 
 /**
@@ -61,7 +65,7 @@ class AunoController {
 	 * @param mixed[] $specs The item's values as [key => value]
 	 * @return \Budabot\User\Modules\AunoItem
 	 */
-	public function getItemFromHash($specs) {
+	public function getItemFromHash(array $specs): AunoItem {
 		$item = new AunoItem();
 		$item->highId = $specs['highId'];
 		$item->lowId  = $specs['lowId'];
@@ -78,7 +82,7 @@ class AunoController {
 	 * @param \Budabot\Core\CommandReply $sendto Where to send the reply yo
 	 * @return \Budabot\User\Modules\AunoItem|null Either the item, or null if error or multiple choices presented
 	 */
-	public function getItemFromSearch($search, $sendto) {
+	public function getItemFromSearch(string $search, CommandReply $sendto): ?AunoItem {
 		// If this is a search string, search the item database for low and high ql
 		$findings = $this->itemsController->findItemsFromLocal($search, null);
 		// Nothing found? Errooooor
@@ -88,7 +92,7 @@ class AunoController {
 			return null;
 		} elseif (count($findings) > 1) {
 			// If we found more than 1 item, check of there is an exact match first
-			$exactFindings = array_values(array_filter($findings, function($item) {
+			$exactFindings = array_values(array_filter($findings, function(DBRow $item) {
 				return $item->numExactMatches === 100;
 			}));
 			// If we didn't find an exact match, ask which one to use
@@ -126,8 +130,8 @@ class AunoController {
 	 * @param \Budabot\Core\CommandReply $sendto Where to send the replies to
 	 * @return \Budabot\User\Modules\AunoItem|null The search object or null
 	 */
-	public function getItem($search, $sendto) {
-		$search = str_replace("&#39;", "'", $search);
+	public function getItem(string $search, CommandReply $sendto): ?Aunoitem {
+		$search = html_entity_decode($search, ENT_QUOTES, "UTF-8");
 		// Check if we were given a link to a item. If so, extract low and high ql
 		if (preg_match("|<a href=['\"]itemref://(?<lowId>\d+)/(?<highId>\d+)/(?<ql>\d+)['\"]>(?<name>.+?)</a>|", $search, $matches)) {
 			return $this->getItemFromHash($matches);
@@ -149,15 +153,15 @@ class AunoController {
 	 * @HandlesCommand("auno")
 	 * @Matches("/^auno (.+)$/i")
 	 */
-	public function aunoCommand($message, $channel, $sender, $sendto, $args) {
+	public function aunoCommand(string $message, string $channel, string $sender, CommandReply $sendto, array $args): void {
 		$item = $this->getItem($args[1], $sendto);
 		if ($item === null) {
 			return;
 		}
 		// Download auno comments for low ID and high ID (if it's different to lowID) and merge them into 1
-		$comments  = $this->getAunoComments($item->lowId);
+		$comments  = $this->getAunoComments((int)$item->lowId);
 		if ($item->lowId != $item->highId) {
-			$commentsHigh = $this->getAunoComments($item->highId);
+			$commentsHigh = $this->getAunoComments((int)$item->highId);
 			$comments = $this->mergeComments($comments, $commentsHigh);
 		}
 		// Display them
@@ -196,7 +200,7 @@ class AunoController {
 	 * @param \Budabot\Users\Module\AunoComment[] $comments,... Every parameter is an array of comments
 	 * @return \Budabot\users\Module\AunoComment[] The merged comments
 	 */
-	public function mergeComments(...$comments) {
+	public function mergeComments(...$comments): array {
 		$merged = array_reduce($comments, 'array_merge', array());
 		usort($merged, function(AunoComment $a, AunoComment $b) {
 			return strcmp($a->time, $b->time);
@@ -210,7 +214,7 @@ class AunoController {
 	 * @param int $itemId The ID of the item
 	 * @return \Budabot\Users\Module\AunoComment[] List of comments with user, time and comment
 	 */
-	public function getAunoComments($itemId) {
+	public function getAunoComments(int $itemId): array {
 		$comments = array();
 		$response = $this->http
 				->get('https://auno.org/ao/db.php')
@@ -256,7 +260,7 @@ class AunoController {
 	 * @param \Budabot\Users\Module\AunoItem $item The item to link to
 	 * @return string The <a href...> link
 	 */
-	public function makeItem(AunoItem $item) {
+	public function makeItem(AunoItem $item): string {
 		return $this->text->makeItem($item->lowId, $item->highId, $item->ql, $item->name);
 	}
 }
@@ -285,7 +289,7 @@ class AunoComment {
 	 *
 	 * @return $this
 	 */
-	public function cleanComment() {
+	public function cleanComment(): AunoComment {
 		$this->comment = preg_replace("/\s*\n\s*/", "", $this->comment);
 		$this->comment = preg_replace('|<br\s*/?>|', "\n", $this->comment);
 		$this->comment = strip_tags($this->comment);
