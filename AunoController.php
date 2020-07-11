@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Budabot\User\Modules;
+namespace Budabot\User\Modules\AUNO_MODULE;
 
 use Budabot\Core\CommandReply;
 use Budabot\Core\DBRow;
-use StdClass;
 
 /**
+ * @author Nadyita (RK5) <nadyita@hodorraid.org>
  * @Instance
  *
  * Commands this controller contains:
@@ -48,7 +48,7 @@ class AunoController {
 	public $settingManager;
 
 	/**
-	 * @var \Budabot\User\Modules\ItemsController $itemsController
+	 * @var \Budabot\Modules\ITEMS_MODULE\ItemsController $itemsController
 	 * @Inject
 	 */
 	public $itemsController;
@@ -63,7 +63,7 @@ class AunoController {
 	 * Get the Auno object for an item built by its hash-values
 	 *
 	 * @param mixed[] $specs The item's values as [key => value]
-	 * @return \Budabot\User\Modules\AunoItem
+	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem
 	 */
 	public function getItemFromHash(array $specs): AunoItem {
 		$item = new AunoItem();
@@ -80,7 +80,7 @@ class AunoController {
 	 *
 	 * @param string $search The string to search for
 	 * @param \Budabot\Core\CommandReply $sendto Where to send the reply yo
-	 * @return \Budabot\User\Modules\AunoItem|null Either the item, or null if error or multiple choices presented
+	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem|null Either the item, or null if error or multiple choices presented
 	 */
 	public function getItemFromSearch(string $search, CommandReply $sendto): ?AunoItem {
 		// If this is a search string, search the item database for low and high ql
@@ -128,7 +128,7 @@ class AunoController {
 	 *
 	 * @param string $search The text/object to search for
 	 * @param \Budabot\Core\CommandReply $sendto Where to send the replies to
-	 * @return \Budabot\User\Modules\AunoItem|null The search object or null
+	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem|null The search object or null
 	 */
 	public function getItem(string $search, CommandReply $sendto): ?Aunoitem {
 		$search = html_entity_decode($search, ENT_QUOTES, "UTF-8");
@@ -197,8 +197,8 @@ class AunoController {
 	/**
 	 * Merge all given comments together
 	 *
-	 * @param \Budabot\Users\Module\AunoComment[] $comments,... Every parameter is an array of comments
-	 * @return \Budabot\users\Module\AunoComment[] The merged comments
+	 * @param \Budabot\User\Modules\AUNO_MODULE\AunoComment[] $comments,... Every parameter is an array of comments
+	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoComment[] The merged comments
 	 */
 	public function mergeComments(...$comments): array {
 		$merged = array_reduce($comments, 'array_merge', array());
@@ -212,7 +212,7 @@ class AunoController {
 	 * Load comments from AUNO for a specific item ID
 	 *
 	 * @param int $itemId The ID of the item
-	 * @return \Budabot\Users\Module\AunoComment[] List of comments with user, time and comment
+	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoComment[] List of comments with user, time and comment
 	 */
 	public function getAunoComments(int $itemId): array {
 		$comments = array();
@@ -257,7 +257,7 @@ class AunoController {
 	/**
 	 * Make a link to an item
 	 *
-	 * @param \Budabot\Users\Module\AunoItem $item The item to link to
+	 * @param \Budabot\User\Modules\AUNO_MODULE\AunoItem $item The item to link to
 	 * @return string The <a href...> link
 	 */
 	public function makeItem(AunoItem $item): string {
