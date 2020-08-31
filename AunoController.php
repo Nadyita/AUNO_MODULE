@@ -1,11 +1,17 @@
-<?php
+<?php declare(strict_types=1);
 
-declare(strict_types=1);
+namespace Nadybot\User\Modules\AUNO_MODULE;
 
-namespace Budabot\User\Modules\AUNO_MODULE;
-
-use Budabot\Core\CommandReply;
-use Budabot\Core\DBRow;
+use Nadybot\Core\{
+	CommandReply,
+	DB,
+	DBRow,
+	Http,
+	LoggerWrapper,
+	SettingManager,
+	Text,
+};
+use Nadybot\Modules\ITEMS_MODULE\ItemsController;
 
 /**
  * @author Nadyita (RK5) <nadyita@hodorraid.org>
@@ -21,49 +27,31 @@ use Budabot\Core\DBRow;
  */
 class AunoController {
 	
-	public $moduleName;
+	public string $moduleName;
 
-	/**
-	 * @var \Budabot\Core\Http $http
-	 * @Inject
-	 */
-	public $http;
+	/** @Inject */
+	public Http $http;
 
-	/**
-	 * @var \Budabot\Core\Text $text
-	 * @Inject
-	 */
-	public $text;
+	/** @Inject */
+	public Text $text;
 	
-	/**
-	 * @var \Budabot\Core\DB $db
-	 * @Inject
-	 */
-	public $db;
+	/** @Inject */
+	public DB $db;
 	
-	/**
-	 * @var \Budabot\Core\SettingManager $settingManager
-	 * @Inject
-	 */
-	public $settingManager;
+	/** @Inject */
+	public SettingManager $settingManager;
 
-	/**
-	 * @var \Budabot\Modules\ITEMS_MODULE\ItemsController $itemsController
-	 * @Inject
-	 */
-	public $itemsController;
+	/** @Inject */
+	public ItemsController $itemsController;
 	
-	/**
-	 * @var \Budabot\Core\LoggerWrapper $logger
-	 * @Logger
-	 */
-	public $logger;
+	/** @Logger */
+	public LoggerWrapper $logger;
 
 	/**
 	 * Get the Auno object for an item built by its hash-values
 	 *
 	 * @param mixed[] $specs The item's values as [key => value]
-	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem
+	 * @return AunoItem
 	 */
 	public function getItemFromHash(array $specs): AunoItem {
 		$item = new AunoItem();
@@ -79,8 +67,8 @@ class AunoController {
 	 * Get the Auno object for an item by a search string, or show a choice dialogue
 	 *
 	 * @param string $search The string to search for
-	 * @param \Budabot\Core\CommandReply $sendto Where to send the reply yo
-	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem|null Either the item, or null if error or multiple choices presented
+	 * @param \Nadybot\Core\CommandReply $sendto Where to send the reply yo
+	 * @return \Nadybot\User\Modules\AUNO_MODULE\AunoItem|null Either the item, or null if error or multiple choices presented
 	 */
 	public function getItemFromSearch(string $search, CommandReply $sendto): ?AunoItem {
 		// If this is a search string, search the item database for low and high ql
@@ -127,8 +115,8 @@ class AunoController {
 	 * Find an Auno Item by search term or pasted text
 	 *
 	 * @param string $search The text/object to search for
-	 * @param \Budabot\Core\CommandReply $sendto Where to send the replies to
-	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoItem|null The search object or null
+	 * @param \Nadybot\Core\CommandReply $sendto Where to send the replies to
+	 * @return \Nadybot\User\Modules\AUNO_MODULE\AunoItem|null The search object or null
 	 */
 	public function getItem(string $search, CommandReply $sendto): ?Aunoitem {
 		$search = html_entity_decode($search, ENT_QUOTES, "UTF-8");
@@ -145,7 +133,7 @@ class AunoController {
 	 * @param string $message The full text as received by the bot
 	 * @param string $channel "tell", "guild" or "priv"
 	 * @param string $sender Name of the person sending the command
-	 * @param \Budabot\Core\CommandReply $sendto Object to send the reply to
+	 * @param \Nadybot\Core\CommandReply $sendto Object to send the reply to
 	 * @param string[] $args The parameters as parsed with the regexp
 	 *
 	 * @return void
@@ -171,7 +159,7 @@ class AunoController {
 			$sendto->reply($msg);
 			return;
 		}
-		$blobs = array();
+		$blobs = [];
 		$commentNum = 0;
 		foreach ($comments as $comment) {
 			$blobs []= sprintf(
@@ -197,11 +185,11 @@ class AunoController {
 	/**
 	 * Merge all given comments together
 	 *
-	 * @param \Budabot\User\Modules\AUNO_MODULE\AunoComment[] $comments,... Every parameter is an array of comments
-	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoComment[] The merged comments
+	 * @param \Nadybot\User\Modules\AUNO_MODULE\AunoComment[] $comments,... Every parameter is an array of comments
+	 * @return \Nadybot\User\Modules\AUNO_MODULE\AunoComment[] The merged comments
 	 */
 	public function mergeComments(...$comments): array {
-		$merged = array_reduce($comments, 'array_merge', array());
+		$merged = array_reduce($comments, 'array_merge', []);
 		usort($merged, function(AunoComment $a, AunoComment $b) {
 			return strcmp($a->time, $b->time);
 		});
@@ -212,10 +200,10 @@ class AunoController {
 	 * Load comments from AUNO for a specific item ID
 	 *
 	 * @param int $itemId The ID of the item
-	 * @return \Budabot\User\Modules\AUNO_MODULE\AunoComment[] List of comments with user, time and comment
+	 * @return AunoComment[] List of comments with user, time and comment
 	 */
 	public function getAunoComments(int $itemId): array {
-		$comments = array();
+		$comments = [];
 		$response = $this->http
 				->get('https://auno.org/ao/db.php')
 				->withQueryParams(['id' => $itemId])
@@ -257,45 +245,10 @@ class AunoController {
 	/**
 	 * Make a link to an item
 	 *
-	 * @param \Budabot\User\Modules\AUNO_MODULE\AunoItem $item The item to link to
+	 * @param AunoItem $item The item to link to
 	 * @return string The <a href...> link
 	 */
 	public function makeItem(AunoItem $item): string {
 		return $this->text->makeItem($item->lowId, $item->highId, $item->ql, $item->name);
-	}
-}
-
-class AunoItem {
-	/** @var int $lowId */
-	public $lowId = 0;
-	/** @var int $highId */
-	public $highId = 0;
-	/** @var int $ql */
-	public $ql = 0;
-	/** @var string $name */
-	public $name = "";
-}
-
-class AunoComment {
-	/** @var string $user */
-	public $user = '';
-	/** @var string $time */
-	public $time = '1970-01-01 00:00';
-	/** @var string $comment */
-	public $comment = '';
-
-	/**
-	 * Remove HTML tags and cleanup the comment returned by AUNO
-	 *
-	 * @return $this
-	 */
-	public function cleanComment(): AunoComment {
-		$this->comment = preg_replace("/\s*\n\s*/", "", $this->comment);
-		$this->comment = preg_replace('|<br\s*/?>|', "\n", $this->comment);
-		$this->comment = strip_tags($this->comment);
-		$this->comment = trim($this->comment);
-		$this->comment = preg_replace("|(https?://[^'\"\s]+)|", "<a href='chatcmd:///start $1'>$1</a>", $this->comment);
-
-		return $this;
 	}
 }
