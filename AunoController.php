@@ -55,9 +55,9 @@ class AunoController {
 	 */
 	public function getItemFromHash(array $specs): AunoItem {
 		$item = new AunoItem();
-		$item->highId = $specs['highId'];
-		$item->lowId  = $specs['lowId'];
-		$item->ql     = $specs['ql'];
+		$item->highId = (int)$specs['highId'];
+		$item->lowId  = (int)$specs['lowId'];
+		$item->ql     = (int)$specs['ql'];
 		$item->name   = $specs['name'];
 
 		return $item;
@@ -103,9 +103,9 @@ class AunoController {
 			$findings = $exactFindings;
 		}
 		$item = new AunoItem();
-		$item->lowId  = $findings[0]->lowid;
-		$item->highId = $findings[0]->highid;
-		$item->ql     = $findings[0]->highql;
+		$item->lowId  = (int)$findings[0]->lowid;
+		$item->highId = (int)$findings[0]->highid;
+		$item->ql     = (int)$findings[0]->highql;
 		$item->name   = $findings[0]->name;
 
 		return $item;
